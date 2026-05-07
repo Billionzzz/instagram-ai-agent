@@ -48,6 +48,8 @@ async def receive_event(request: Request):
         return {"status": "ignored"}
 
     for entry in data.get("entry", []):
+        # entry["id"] is our Instagram account ID — use it as the API actor
+        ig_account_id = entry.get("id")
         for messaging in entry.get("messaging", []):
             sender_id = messaging.get("sender", {}).get("id")
             message = messaging.get("message", {})
@@ -60,11 +62,11 @@ async def receive_event(request: Request):
                 log.info("Skipping non-text or missing sender: %s", messaging)
                 continue
 
-            log.info("Message from %s: %s", sender_id, text)
+            log.info("Message from %s to account %s: %s", sender_id, ig_account_id, text)
 
             try:
                 reply = get_reply(sender_id, text)
-                send_message(sender_id, reply)
+                send_message(ig_account_id, sender_id, reply)
                 log.info("Replied to %s: %s", sender_id, reply[:80])
             except Exception as exc:
                 log.error("Error replying to %s: %s", sender_id, exc, exc_info=True)

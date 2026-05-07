@@ -8,10 +8,10 @@ GRAPH_API_URL = "https://graph.facebook.com/v21.0"
 log = logging.getLogger(__name__)
 
 
-def send_message(recipient_id: str, text: str) -> None:
+def send_message(ig_account_id: str, recipient_id: str, text: str) -> None:
     access_token = os.environ["INSTAGRAM_ACCESS_TOKEN"]
 
-    url = f"{GRAPH_API_URL}/me/messages"
+    url = f"{GRAPH_API_URL}/{ig_account_id}/messages"
     payload = {
         "recipient": {"id": recipient_id},
         "message": {"text": text},
