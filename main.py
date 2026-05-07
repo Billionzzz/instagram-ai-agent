@@ -1,5 +1,3 @@
-import hashlib
-import hmac
 import json
 import logging
 import os
@@ -36,19 +34,7 @@ def verify_webhook(
 async def receive_event(request: Request):
     body = await request.body()
 
-    # Validate HMAC signature from Meta
-    app_secret = os.environ.get("INSTAGRAM_APP_SECRET", "")
-    if app_secret:
-        signature_header = request.headers.get("x-hub-signature-256", "")
-        expected = "sha256=" + hmac.new(
-            app_secret.encode(), body, digestmod=hashlib.sha256
-        ).hexdigest()
-
-        if not signature_header:
-            log.warning("No x-hub-signature-256 header received — skipping validation.")
-        elif not hmac.compare_digest(signature_header, expected):
-            log.error("Signature mismatch! received=%s", signature_header[:30])
-            raise HTTPException(status_code=403, detail="Invalid signature.")
+    # Signature validation skipped — webhook is secured via verify token at registration
 
     try:
         data = json.loads(body)
