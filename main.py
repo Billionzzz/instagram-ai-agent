@@ -22,11 +22,10 @@ def verify_webhook(
     hub_verify_token: str = Query(None, alias="hub.verify_token"),
     hub_challenge: str = Query(None, alias="hub.challenge"),
 ):
-    verify_token = os.environ.get("INSTAGRAM_VERIFY_TOKEN", "")
+    verify_token = os.environ.get("IG_VERIFY_TOKEN", "")
     if hub_mode == "subscribe" and hub_verify_token == verify_token:
-        log.info("Webhook verified successfully.")
+        log.info("Webhook verified.")
         return Response(content=hub_challenge, media_type="text/plain")
-    log.warning("Webhook verification failed. received=%s expected=%s", hub_verify_token, verify_token)
     raise HTTPException(status_code=403, detail="Verification token mismatch.")
 
 
@@ -34,22 +33,16 @@ def verify_webhook(
 async def receive_event(request: Request):
     body = await request.body()
 
-    # Signature validation skipped — webhook is secured via verify token at registration
-
     try:
         data = json.loads(body)
     except Exception:
-        log.error("Failed to parse JSON body: %s", body[:200])
+        log.error("Failed to parse JSON body")
         return {"status": "ok"}
-
-    log.info("Incoming payload object type: %s", data.get("object"))
 
     if data.get("object") not in ("instagram", "page"):
         return {"status": "ignored"}
 
     for entry in data.get("entry", []):
-        # entry["id"] is our Instagram account ID — use it as the API actor
-        ig_account_id = entry.get("id")
         for messaging in entry.get("messaging", []):
             sender_id = messaging.get("sender", {}).get("id")
             message = messaging.get("message", {})
@@ -59,14 +52,13 @@ async def receive_event(request: Request):
                 continue
 
             if not sender_id or not text:
-                log.info("Skipping non-text or missing sender: %s", messaging)
                 continue
 
-            log.info("Message from %s to account %s: %s", sender_id, ig_account_id, text)
+            log.info("Message from %s: %s", sender_id, text)
 
             try:
                 reply = get_reply(sender_id, text)
-                send_message(ig_account_id, sender_id, reply)
+                send_message(sender_id, reply)
                 log.info("Replied to %s: %s", sender_id, reply[:80])
             except Exception as exc:
                 log.error("Error replying to %s: %s", sender_id, exc, exc_info=True)
