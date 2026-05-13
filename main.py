@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 app = FastAPI(title="Instagram AI Agent")
 
-APP_ID = "1414145400476681"
+APP_ID = "2028447458105174"
 BASE_URL = "https://instagram-ai-agent-production-96f3.up.railway.app"
 CALLBACK_URL = f"{BASE_URL}/auth/callback"
 
@@ -149,6 +149,7 @@ async def receive_event(request: Request):
         return {"status": "ignored"}
 
     for entry in data.get("entry", []):
+        entry_page_id = entry.get("id")
         for messaging in entry.get("messaging", []):
             sender_id = messaging.get("sender", {}).get("id")
             message = messaging.get("message", {})
@@ -164,7 +165,7 @@ async def receive_event(request: Request):
 
             try:
                 reply = get_reply(sender_id, text)
-                send_message(sender_id, reply)
+                send_message(sender_id, reply, page_id=entry_page_id)
                 log.info("Replied to %s: %s", sender_id, reply[:80])
             except Exception as exc:
                 log.error("Error replying to %s: %s", sender_id, exc, exc_info=True)
