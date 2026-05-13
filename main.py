@@ -149,7 +149,6 @@ async def receive_event(request: Request):
         return {"status": "ignored"}
 
     for entry in data.get("entry", []):
-        entry_page_id = entry.get("id")
         for messaging in entry.get("messaging", []):
             sender_id = messaging.get("sender", {}).get("id")
             message = messaging.get("message", {})
@@ -165,7 +164,7 @@ async def receive_event(request: Request):
 
             try:
                 reply = get_reply(sender_id, text)
-                send_message(sender_id, reply, page_id=entry_page_id)
+                send_message(sender_id, reply)
                 log.info("Replied to %s: %s", sender_id, reply[:80])
             except Exception as exc:
                 log.error("Error replying to %s: %s", sender_id, exc, exc_info=True)
